@@ -1,0 +1,1863 @@
+name: Compilar APK v4 (mouse y ajustes)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Crear archivos del proyecto
+        run: |
+          mkdir -p "$(dirname www/index.html)"
+          cat > www/index.html <<'FIN_0'
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+          <title>Control TV Box</title>
+          <style>
+          :root{--bg:#121416;--txt:#f2efe8;--mut:#9aa0a8;--acc:#ffb020;--ok:#4cc38a;color-scheme:dark}
+          *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+          html,body{margin:0;color:var(--txt);font-family:"Trebuchet MS","Segoe UI",sans-serif}
+          body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);min-height:100vh;display:flex;justify-content:center;background:#111315 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+          .remote{width:100%;max-width:420px;padding:14px 16px 28px;border-radius:0 0 40px 40px;background-color:#2a2d32;
+           background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px),linear-gradient(160deg,#3a3e44,#26292d 55%,#1d1f22);
+           box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -24px 40px rgba(0,0,0,.3),0 0 40px rgba(0,0,0,.6)}
+          button{font:inherit;color:var(--txt);border:0;border-radius:16px;padding:0;cursor:pointer;min-height:48px;
+           --hi:#4b515a;--c:#353a41;--d:#14161a;
+           background:linear-gradient(180deg,var(--hi),var(--c));
+           box-shadow:0 5px 0 var(--d),0 10px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.25);
+           text-shadow:0 1px 1px rgba(0,0,0,.45);transition:transform .06s,box-shadow .06s,filter .06s}
+          button:active{transform:translateY(4px);filter:brightness(.9);
+           box-shadow:0 1px 0 var(--d),0 2px 5px rgba(0,0,0,.45),inset 0 3px 8px rgba(0,0,0,.4)}
+          .c-red{--hi:#f26a6f;--c:#d93f46;--d:#7f1a20}
+          .c-blue{--hi:#5aa9ff;--c:#2f7de0;--d:#173f7a}
+          .c-violet{--hi:#a98bff;--c:#7d5ce0;--d:#3e2a85}
+          .c-green{--hi:#5fd69a;--c:#2fae6f;--d:#146038}
+          .c-orange{--hi:#ff9a52;--c:#f0762a;--d:#8a3c0c}
+          .c-teal{--hi:#4fd3d6;--c:#25a6ab;--d:#0f5b5e}
+          .c-slate{--hi:#5d646f;--c:#454b54;--d:#1a1c20}
+          .c-amber,.go,.tabs .sel,.dpad .ok{--hi:#ffcb5c;--c:#ffb020;--d:#9a6200;color:#1d1400;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+          .top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+          .led{width:12px;height:12px;border-radius:50%;background:#555;flex:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+          .led.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+          .status{flex:1;font-size:13px;color:var(--mut)}
+          .top button{min-width:48px;font-size:18px}
+          .pwr{min-width:52px!important}
+          .tabs{display:flex;gap:6px;margin:10px 0 16px}
+          .tabs button{flex:1;font-size:14px;min-height:42px}
+          .grid{display:grid;gap:10px}
+          .rocker{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+          .rk{background:#15171a;border-radius:22px;padding:7px;display:grid;grid-template-rows:64px 28px 64px;text-align:center;box-shadow:inset 0 3px 9px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08)}
+          .rk span{align-self:center;font-size:12px;color:var(--mut)}
+          .rk button{font-size:28px;font-weight:700}
+          .dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:236px;margin:8px auto 18px}
+          .dpad button{height:68px;font-size:24px}
+          .dpad .ok{border-radius:50%;font-weight:800;font-size:18px}
+          .row3{grid-template-columns:repeat(3,1fr);margin-bottom:12px}
+          .num{grid-template-columns:repeat(3,1fr);margin-bottom:14px}
+          .num button{height:58px;font-size:22px}
+          .kb input,.panel input,.addapp input,.picker input{width:100%;background:#0f1113;border:1px solid #3a3f46;color:var(--txt);border-radius:12px;padding:12px;font:inherit;font-size:16px;user-select:text;margin-bottom:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+          .kb .send{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+          .apps{grid-template-columns:repeat(4,1fr);margin-top:6px}
+          .app{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:76px;font-size:11px;padding:6px;position:relative}
+          .app b{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;color:#111;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.4)}
+          .app i{position:absolute;top:2px;right:6px;font-style:normal;color:var(--mut);font-size:14px;display:none}
+          .edit .app i{display:block}
+          .add{background:transparent!important;border:2px dashed #555;box-shadow:none!important}
+          .hdr{display:flex;justify-content:space-between;align-items:center;margin:6px 0 10px;font-size:14px;color:var(--mut)}
+          .hdr button{min-height:34px;padding:0 12px;font-size:13px}
+          .panel,.addapp,.picker{background:#17191c;border-radius:16px;padding:12px;margin-bottom:14px;display:none;box-shadow:inset 0 3px 9px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.08)}
+          .panel.show,.addapp.show,.picker.show{display:block}
+          .panel label{font-size:12px;color:var(--mut);display:block;margin:2px 0 4px}
+          .panel .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+          .btnrow{display:flex;gap:8px}.btnrow button{flex:1;font-size:14px}
+          .plist{max-height:300px;overflow-y:auto;margin-bottom:10px;-webkit-overflow-scrolling:touch}
+          .prow{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid #2a2d33;cursor:pointer}
+          .prow input{width:22px;height:22px;accent-color:var(--acc);flex:none;margin:0;box-shadow:none}
+          .prow b{display:block;font-weight:600;font-size:15px}
+          .prow small{display:block;color:var(--mut);font-size:11px;word-break:break-all}
+          .pmsg{color:var(--mut);font-size:14px;padding:14px 4px;text-align:center}
+          .link{background:transparent!important;box-shadow:none!important;color:var(--acc);font-size:13px;min-height:36px;width:100%}
+          .pad{position:relative;aspect-ratio:16/9;background:#0f1113;border:2px solid #3a3f46;border-radius:18px;touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;text-align:center;padding:10px;margin-bottom:12px;box-shadow:inset 0 4px 12px rgba(0,0,0,.7)}
+          .pad span{pointer-events:none}
+          #dot{position:absolute;width:28px;height:28px;border-radius:50%;background:var(--acc);opacity:0;transform:translate(-50%,-50%);pointer-events:none}
+          .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;z-index:9}
+          .toast.show{opacity:1}
+          .scanres{margin-bottom:10px;font-size:13px;color:var(--mut);line-height:1.45}
+          .scanres button{width:100%;margin-bottom:10px;font-size:15px}
+          .dwrap{position:relative}
+          .dwrap .round{position:absolute;top:8px;z-index:1}
+          .dwrap .r-l{left:2px}
+          .dwrap .r-r{right:2px}
+          .round{width:46px;height:46px;min-height:46px!important;border-radius:50%;font-size:22px;display:grid;place-items:center;line-height:1}
+          .round svg{width:24px;height:24px;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+          .hide{display:none!important}
+          </style>
+          </head>
+          <body>
+          <div class="remote" id="remote">
+            <div class="top">
+              <div class="led" id="led"></div>
+              <div class="status" id="status">Sin conexión</div>
+              <button onclick="toggle('conn')" aria-label="Conexión">⚙</button>
+              <button onclick="voice()" aria-label="Búsqueda por voz">🎤</button>
+              <button class="pwr" onclick="toggle('pwr')" aria-label="Menú de encendido">⏻</button>
+            </div>
+
+            <div class="panel" id="conn">
+              <label>Conexión fácil por Wi‑Fi (recomendada)</label>
+              <button class="go c-amber" style="width:100%;margin:6px 0 10px;font-size:15px" onclick="rScan()">🔍 Buscar mi TV Box</button>
+              <div class="scanres" id="rres">Primero instala esta misma app en el TV Box y actívala en Ajustes › Accesibilidad › Control TV Box.</div>
+              <details style="margin-bottom:8px"><summary style="color:var(--mut);font-size:12px;margin-bottom:6px">Avanzado: conexión por ADB</summary>
+              <button class="go c-amber" style="width:100%;margin-bottom:10px;font-size:15px" onclick="scanTV()">🔍 Buscar mi TV Box automáticamente</button>
+              <div class="scanres" id="scanres"></div>
+              <label>O escribe la IP a mano (Ajustes › Red) y el puerto</label>
+              <div class="two"><input id="ip" placeholder="192.168.1.50" inputmode="decimal"><input id="port" placeholder="5555" inputmode="numeric"></div>
+              <label>Ruta para enviar teclas (usa {key})</label>
+              <input id="path" placeholder="/key/{key}">
+              <div class="btnrow"><button class="go" onclick="saveWifi()">Guardar Wi‑Fi</button></div>
+              </details>
+              <hr style="border:0;border-top:1px solid #333;margin:12px 0">
+              <label>Bluetooth como teclado y mouse (sin IP, recomendado)</label>
+              <div class="grid" style="gap:8px;margin:6px 0 8px">
+                <button class="c-blue" onclick="btStart()">1. Activar modo Bluetooth</button>
+                <button class="c-violet" onclick="btVisible()">2. Hacer visible mi teléfono</button>
+                <button class="c-green" onclick="btList()">3. Elegir mi TV Box</button>
+              </div>
+              <div class="scanres" id="btres"></div>
+              <details style="margin-top:6px"><summary style="color:var(--mut);font-size:12px;margin-bottom:6px">Avanzado: Bluetooth BLE</summary>
+              <label>Bluetooth: UUID de servicio y característica (BLE)</label>
+              <input id="svc" placeholder="Servicio (UUID)">
+              <input id="chr" placeholder="Característica (UUID)">
+              <div class="btnrow"><button class="go" onclick="connectBT()">Buscar Bluetooth</button><button onclick="disconnect()">Desconectar</button></div>
+              </details>
+            </div>
+
+            <div class="panel" id="pwr">
+              <div class="grid" style="grid-template-columns:1fr;gap:12px">
+                <button onclick="powerAct('POWER')">☾ Suspender / Despertar</button>
+                <button onclick="powerAct('REBOOT')">↻ Reiniciar</button>
+                <button onclick="powerAct('SHUTDOWN')">⏻ Apagar</button>
+              </div>
+              <label style="margin-top:10px">Reiniciar y Apagar piden tocar dos veces para confirmar. Un box apagado solo se enciende con su botón físico o el control infrarrojo.</label>
+            </div>
+
+            <div class="tabs">
+              <button id="t-main" class="sel" onclick="mode('main')">Control</button>
+              <button id="t-num" onclick="mode('num')">123</button>
+              <button id="t-kb" onclick="mode('kb')">ABC</button>
+              <button id="t-mouse" onclick="mode('mouse')">🖱</button>
+            </div>
+
+            <!-- Control principal -->
+            <div id="m-main">
+              <div class="rocker">
+                <div class="rk"><button onclick="key('VOLUME_UP')">+</button><span>Volumen</span><button onclick="key('VOLUME_DOWN')">−</button></div>
+                <div class="rk"><button onclick="key('CHANNEL_UP')">+</button><span>Canal</span><button onclick="key('CHANNEL_DOWN')">−</button></div>
+              </div>
+              <div class="grid row3">
+                <button onclick="key('MUTE')">🔇 Silencio</button>
+                <button onclick="key('HOME')">⌂ Inicio</button>
+                <button onclick="key('MENU')">☰ Menú</button>
+              </div>
+              <div class="dwrap">
+              <button class="round r-l c-slate" onclick="appLaunch('com.android.settings','Ajustes')" aria-label="Ajustes del sistema">⚙</button>
+              <button class="round r-r c-slate" onclick="appLaunch('com.android.vending','Play Store')" aria-label="Play Store">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="4,2 13,12 4,22" fill="#2f9bff"/><polygon points="4,2 16.5,9.35 13,12" fill="#34d27b"/><polygon points="4,22 16.5,14.65 13,12" fill="#ff4d55"/><polygon points="16.5,9.35 21,12 16.5,14.65 13,12" fill="#ffc83d"/></svg>
+              </button>
+              <div class="dpad">
+                <span></span><button onclick="key('UP')">▲</button><span></span>
+                <button onclick="key('LEFT')">◀</button><button class="ok" onclick="key('OK')">OK</button><button onclick="key('RIGHT')">▶</button>
+                <span></span><button onclick="key('DOWN')">▼</button><span></span>
+              </div>
+              </div>
+              <div class="grid row3">
+                <button onclick="key('BACK')">↩ Atrás</button>
+                <button onclick="key('PLAY_PAUSE')">⏯</button>
+                <button onclick="key('INFO')">ⓘ Info</button>
+              </div>
+            </div>
+
+            <!-- Teclado numérico -->
+            <div id="m-num" class="hide">
+              <div class="grid num" id="numpad"></div>
+              <div class="grid row3">
+                <button onclick="key('BACK')">↩ Atrás</button>
+                <button onclick="key('OK')">OK</button>
+                <button onclick="key('DEL')">⌫</button>
+              </div>
+            </div>
+
+            <!-- Teclado alfanumérico -->
+            <div id="m-kb" class="hide kb">
+              <input id="kbtext" placeholder="Escribe aquí para enviar al TV Box" autocomplete="off" autocapitalize="off">
+              <div class="send">
+                <button class="go" onclick="sendText()">Enviar texto</button>
+                <button onclick="key('DEL')">⌫ Borrar</button>
+                <button onclick="key('ENTER')">↵ Enter</button>
+              </div>
+              <div class="grid row3" style="margin-top:10px">
+                <button onclick="key('SPACE')">Espacio</button>
+                <button onclick="key('BACK')">↩ Atrás</button>
+                <button onclick="mode('main')">Control</button>
+              </div>
+            </div>
+
+            <!-- Mouse / touchpad -->
+            <div id="m-mouse" class="hide">
+              <div class="pad" id="pad"><i id="dot"></i><span>Desliza para mover el cursor<br>Toca para hacer clic</span></div>
+              <div class="grid row3">
+                <button onclick="scrollTV(-1)">⇧ Subir</button>
+                <button onclick="key('BACK')">↩ Atrás</button>
+                <button onclick="scrollTV(1)">⇩ Bajar</button>
+              </div>
+              <div class="grid row3">
+                <button class="c-amber" onclick="mclick(1)">Clic</button>
+                <button class="c-orange" onclick="mclick(2)">Clic der.</button>
+                <button onclick="key('HOME')">⌂ Inicio</button>
+              </div>
+            </div>
+
+            <!-- Apps -->
+            <div class="hdr"><span>Mis apps</span><button id="editbtn" onclick="toggleEdit()">Editar</button></div>
+            <div class="picker" id="picker">
+              <div class="hdr" style="margin-top:0"><span id="pcount">Apps del TV Box</span><button onclick="loadPicker()">↻ Actualizar</button></div>
+              <input id="psearch" placeholder="Buscar app" oninput="renderPicker()" autocomplete="off">
+              <div class="plist" id="plist"></div>
+              <div class="btnrow"><button class="go" onclick="addSelected()">Agregar seleccionadas</button><button onclick="closePicker()">Cerrar</button></div>
+              <button class="link" onclick="manual()">Escribir el paquete a mano</button>
+            </div>
+            <div class="addapp" id="addapp">
+              <input id="an" placeholder="Nombre (ej. YouTube)">
+              <input id="ap" placeholder="Paquete (ej. com.google.android.youtube.tv)" autocapitalize="off">
+              <div class="btnrow"><button class="go" onclick="addApp()">Agregar app</button><button onclick="toggle('addapp')">Cancelar</button></div>
+            </div>
+            <div class="grid apps" id="apps"></div>
+          </div>
+          <div class="toast" id="toast"></div>
+
+          <script>
+          // Puente al plugin nativo (Capacitor), con varias formas de encontrarlo
+          function getPlugin(name){
+            const C=window.Capacitor;if(!C)return null;
+            try{if(C.Plugins&&C.Plugins[name])return C.Plugins[name]}catch(e){}
+            try{if(typeof C.registerPlugin==='function')return C.registerPlugin(name)}catch(e){}
+            if(typeof C.nativePromise==='function')return new Proxy({},{get:(t,m)=>(o)=>C.nativePromise(name,m,o||{})});
+            return null}
+          (function(){const P=getPlugin('ADB');if(P&&!window.ADB)window.ADB={shell:(ip,port,cmd)=>P.shell({ip:ip,port:port,cmd:cmd})}})();
+          // ---------- Almacenamiento (con respaldo si no está disponible) ----------
+          const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+          const $=id=>document.getElementById(id);
+          let hidOn=false,hidName='',rcvOn=false,rcvName='';
+          let cfg=store.get('cfg',{ip:'',port:'5555',path:'/key/{key}',svc:'',chr:''});
+          let apps=store.get('apps',[{n:'YouTube',p:'com.google.android.youtube.tv'},{n:'Netflix',p:'com.netflix.ninja'},{n:'Kodi',p:'org.xbmc.kodi'}]);
+          let bt={dev:null,chr:null},wifiOK=false,editing=false;
+
+          // ---------- Utilidades ----------
+          function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1800)}
+          function toggle(id){$(id).classList.toggle('show')}
+          function status(){const on=bt.chr||wifiOK||hidOn||rcvOn;$('led').classList.toggle('on',!!on);
+          $('status').textContent=rcvOn?'Wi‑Fi: '+(rcvName||cfg.rip):hidOn?'Bluetooth: '+(hidName||'conectado'):bt.chr?'Bluetooth: '+(bt.dev.name||'conectado'):wifiOK?'Wi‑Fi: '+cfg.ip:'Sin conexión'}
+
+          // ---------- Envío de comandos ----------
+          // Códigos de tecla Android (ADB) para el H96 Max M2
+          const KC={POWER:26,VOLUME_UP:24,VOLUME_DOWN:25,MUTE:164,CHANNEL_UP:166,CHANNEL_DOWN:167,HOME:3,MENU:82,BACK:4,UP:19,DOWN:20,LEFT:21,RIGHT:22,OK:23,PLAY_PAUSE:85,INFO:165,DEL:67,ENTER:66,SPACE:62};
+          function adbCmd(c){
+            if(KC[c]!==undefined)return 'input keyevent '+KC[c];
+            if(c.startsWith('NUM_'))return 'input keyevent '+(7+parseInt(c.slice(4)));
+            if(c.startsWith('TEXT:')){const t=c.slice(5).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 .,@_+-]/g,'').replace(/ /g,'%s');return "input text '"+t+"'";}
+            if(c==='APP:com.android.settings')return 'am start -a android.settings.SETTINGS';
+            if(c.startsWith('APP:'))return 'monkey -p '+c.slice(4)+' -c android.intent.category.LAUNCHER 1';
+            if(c==='REBOOT')return "nohup sh -c 'sleep 1; reboot' >/dev/null 2>&1 &";
+            if(c==='SHUTDOWN')return "nohup sh -c 'sleep 1; reboot -p' >/dev/null 2>&1 &";
+            if(c==='PING')return 'echo ok';
+            return null;
+          }
+          async function send(cmd){
+            let sent=false;
+            if(rcvOn){const h=await rSend(cmd);if(h)return}
+            if(hidOn){const h=await btSend(cmd);if(h)return}
+            // Puente nativo ADB (plugin de Capacitor): window.ADB.shell(ip, puerto, comando)
+            if(window.ADB&&cfg.ip&&adbCmd(cmd)){
+              try{await window.ADB.shell(cfg.ip,parseInt(cfg.port)||5555,adbCmd(cmd));wifiOK=true;status();return}
+              catch(e){wifiOK=false;toast('ADB sin respuesta');status();return}
+            }
+            if(bt.chr){try{await bt.chr.writeValue(new TextEncoder().encode(cmd+'\n'));sent=true}catch(e){toast('Error Bluetooth');bt.chr=null;status()}}
+            if(!sent&&cfg.ip){
+              try{const url='http://'+cfg.ip+':'+cfg.port+cfg.path.replace('{key}',encodeURIComponent(cmd));
+                await fetch(url,{method:'POST',mode:'no-cors'});wifiOK=true;sent=true}catch(e){wifiOK=false;toast('Sin respuesta por Wi‑Fi')}
+              status()}
+            if(!sent&&!bt.chr&&!cfg.ip)toast(hidOn?'Esa función necesita ADB (IP del box)':'Configura la conexión (⚙)');
+          }
+          const key=k=>send(k);
+          function sendText(){const v=$('kbtext').value;if(!v)return;send('TEXT:'+v);$('kbtext').value=''}
+
+          // ---------- Conexión ----------
+          function saveWifi(){cfg.ip=$('ip').value.trim();cfg.port=$('port').value.trim()||'5555';cfg.path=$('path').value.trim()||'/key/{key}';
+          cfg.svc=$('svc').value.trim();cfg.chr=$('chr').value.trim();store.set('cfg',cfg);
+          if(cfg.ip){testConn()}else toast('Escribe la IP')}
+          async function connectBT(){
+            cfg.svc=$('svc').value.trim().toLowerCase();cfg.chr=$('chr').value.trim().toLowerCase();store.set('cfg',cfg);
+            if(!navigator.bluetooth){toast('Bluetooth no disponible en este navegador');return}
+            if(!cfg.svc||!cfg.chr){toast('Escribe los UUID del dispositivo');return}
+            try{
+              bt.dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[cfg.svc]});
+              const s=await (await bt.dev.gatt.connect()).getPrimaryService(cfg.svc);
+              bt.chr=await s.getCharacteristic(cfg.chr);
+              bt.dev.addEventListener('gattserverdisconnected',()=>{bt.chr=null;status()});
+              status();toast('Bluetooth conectado');$('conn').classList.remove('show')
+            }catch(e){toast('No se pudo conectar')}
+          }
+          function disconnect(){try{bt.dev&&bt.dev.gatt.disconnect()}catch(e){}bt={dev:null,chr:null};wifiOK=false;cfg.ip='';$('ip').value='';store.set('cfg',cfg);status()}
+
+          // ---------- Modos ----------
+          function mode(m){['main','num','kb','mouse'].forEach(x=>{$('m-'+x).classList.toggle('hide',x!==m);$('t-'+x).classList.toggle('sel',x===m)});
+          if(m==='kb')setTimeout(()=>$('kbtext').focus(),50)}
+          $('numpad').innerHTML=[1,2,3,4,5,6,7,8,9,'—',0,'—'].map(n=>n==='—'?'<span></span>':`<button onclick="key('NUM_${n}')">${n}</button>`).join('');
+
+          // ---------- Apps ----------
+          const colors=['#ffb020','#6cc6ff','#7ee0a1','#ff8aa1','#c3a6ff','#ffd36b','#8fe3e0'];
+          function renderApps(){
+            $('apps').innerHTML=apps.map((a,i)=>`<button class="app" onclick="appTap(${i})"><i>✕</i><b style="background:${colors[i%colors.length]}">${a.n.charAt(0).toUpperCase()}</b>${a.n}</button>`).join('')+
+            `<button class="app add" onclick="openPicker()"><b style="background:#333;color:#aaa">+</b>Agregar</button>`;
+          }
+          function appTap(i){if(editing){apps.splice(i,1);store.set('apps',apps);renderApps();return}send('APP:'+apps[i].p);toast('Abriendo '+apps[i].n)}
+          function addApp(){const n=$('an').value.trim(),p=$('ap').value.trim();if(!n||!p){toast('Completa nombre y paquete');return}
+          apps.push({n,p});store.set('apps',apps);$('an').value=$('ap').value='';$('addapp').classList.remove('show');renderApps()}
+          // ---------- Selector de apps del TV Box ----------
+          const KNOWN={'com.google.android.youtube.tv':'YouTube','com.google.android.youtube':'YouTube','com.netflix.ninja':'Netflix','com.netflix.mediaclient':'Netflix','org.xbmc.kodi':'Kodi','com.spotify.tv.android':'Spotify','com.spotify.music':'Spotify','com.amazon.amazonvideo.livingroom':'Prime Video','com.amazon.avod.thirdpartyclient':'Prime Video','com.disney.disneyplus':'Disney+','com.wbd.stream':'Max','com.hbo.hbonow':'Max','com.android.vending':'Play Store','com.android.settings':'Ajustes','com.google.android.apps.youtube.music':'YouTube Music','org.videolan.vlc':'VLC','com.mxtech.videoplayer.ad':'MX Player','com.android.chrome':'Chrome','tv.twitch.android.app':'Twitch','com.android.browser':'Navegador'};
+          const SKIP=['com','org','net','android','app','apps','tv','google','io','mobile','ninja','androidtv','tvapp','free','ad'];
+          function pretty(p){if(KNOWN[p])return KNOWN[p];
+            const parts=p.split('.').filter(x=>SKIP.indexOf(x)<0);const w=parts.length?parts[parts.length-1]:p.split('.').pop();
+            return w.charAt(0).toUpperCase()+w.slice(1)}
+          let pickList=[],picked=new Set();
+          async function adbOut(cmd){
+            if(!window.ADB||!cfg.ip)throw new Error('noadb');
+            const r=await window.ADB.shell(cfg.ip,parseInt(cfg.port)||5555,cmd);return (r&&r.output)||''}
+          function openPicker(){$('addapp').classList.remove('show');$('picker').classList.add('show');
+            $('picker').scrollIntoView({behavior:'smooth',block:'nearest'});loadPicker()}
+          function closePicker(){$('picker').classList.remove('show')}
+          function manual(){closePicker();$('addapp').classList.add('show')}
+          async function loadPicker(){
+            picked=new Set();$('plist').innerHTML='<div class="pmsg">Leyendo apps del TV Box…</div>';
+            if(rcvOn){try{const r=await rget('/apps');pickList=(r.apps||[]).map(a=>({p:a.p,n:a.n}));renderPicker()}
+              catch(e){$('plist').innerHTML='<div class="pmsg">No se pudo leer las apps del TV Box.</div>'}return}
+            if(!cfg.ip){$('plist').innerHTML='<div class="pmsg">Primero conecta el TV Box en ⚙.</div>';return}
+            if(!window.ADB){$('plist').innerHTML='<div class="pmsg">Esta función necesita la app instalada (APK) con ADB.</div>';return}
+            try{
+              let out=await adbOut('cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER');
+              let pk=out.split('\n').map(l=>l.trim()).filter(l=>/^[A-Za-z0-9_.]+\/\S+$/.test(l)).map(l=>l.split('/')[0]);
+              if(!pk.length){out=await adbOut('pm list packages -3');pk=out.split('\n').map(l=>l.replace('package:','').trim()).filter(Boolean)}
+              pk=Array.from(new Set(pk)).filter(p=>p!=='com.control.remoto');
+              pickList=pk.map(p=>({p:p,n:pretty(p)})).sort((a,b)=>a.n.localeCompare(b.n));
+              renderPicker();
+            }catch(e){$('plist').innerHTML='<div class="pmsg">No se pudo leer. Revisa la conexión y acepta la depuración en el TV.</div>'}
+          }
+          function renderPicker(){
+            const q=$('psearch').value.trim().toLowerCase();
+            const have=new Set(apps.map(a=>a.p));
+            const rows=pickList.filter(a=>!q||a.n.toLowerCase().includes(q)||a.p.toLowerCase().includes(q));
+            $('pcount').textContent='Apps del TV Box ('+pickList.length+')';
+            $('plist').innerHTML=rows.length?rows.map(a=>{const i=pickList.indexOf(a);const on=have.has(a.p);
+              return '<label class="prow"><input type="checkbox" '+(on?'checked disabled':(picked.has(a.p)?'checked':''))+' onchange="pick('+i+',this.checked)"><span><b>'+a.n+(on?' · ya agregada':'')+'</b><small>'+a.p+'</small></span></label>'}).join(''):'<div class="pmsg">Sin resultados.</div>';
+          }
+          function pick(i,on){const p=pickList[i].p;if(on)picked.add(p);else picked.delete(p)}
+          function addSelected(){
+            if(!picked.size){toast('Marca al menos una app');return}
+            pickList.forEach(a=>{if(picked.has(a.p)&&!apps.some(x=>x.p===a.p))apps.push({n:a.n,p:a.p})});
+            store.set('apps',apps);picked=new Set();renderApps();closePicker();toast('Apps agregadas')}
+          // ---------- Voz y mouse ----------
+          async function voice(){
+            const P=getPlugin('ADB');
+            if(!P){mode('kb');toast('Usa el micrófono de tu teclado para dictar');return}
+            try{const r=await P.listen();
+              if(r&&r.text){toast('Buscando: '+r.text);await send('TEXT:'+r.text);setTimeout(()=>send('ENTER'),500)}}
+            catch(e){if(String((e&&e.message)||e).indexOf('reconocimiento')>=0){mode('kb');toast('Usa el micrófono de tu teclado')}else toast('No se escuchó nada')}
+          }
+          let scr=null,pd=null;
+          async function getScr(){if(scr)return scr;
+            try{const o=await adbOut('wm size');const m=o.match(/(\d+)x(\d+)/g);const l=m[m.length-1].match(/(\d+)x(\d+)/);scr={w:+l[1],h:+l[2]}}
+            catch(e){scr={w:1920,h:1080}}return scr}
+          function rawAdb(cmd){
+            if(!window.ADB||!cfg.ip){toast('El mouse necesita conexión ADB');return Promise.resolve()}
+            return adbOut(cmd).catch(()=>toast('Sin respuesta'))}
+          function dot(e){const r=$('pad').getBoundingClientRect(),d=$('dot');d.style.left=(e.clientX-r.left)+'px';d.style.top=(e.clientY-r.top)+'px';d.style.opacity=1}
+          function setupPad(){const pad=$('pad');let lx=0,ly=0,ax=0,ay=0,tm=0;
+            const flush=()=>{tm=0;const dx=Math.max(-127,Math.min(127,Math.round(ax))),dy=Math.max(-127,Math.min(127,Math.round(ay)));
+              if(dx||dy){ax-=dx;ay-=dy;btp().mouse({dx:dx,dy:dy}).catch(()=>{})}};
+            pad.addEventListener('pointerdown',e=>{pad.setPointerCapture(e.pointerId);pd={x:e.clientX,y:e.clientY,t:Date.now(),lx:e.clientX,ly:e.clientY};lx=e.clientX;ly=e.clientY;ax=ay=0;dot(e)});
+            pad.addEventListener('pointermove',e=>{if(!pd)return;pd.lx=e.clientX;pd.ly=e.clientY;dot(e);
+              if(rcvOn){mvx+=(e.clientX-lx)*4;mvy+=(e.clientY-ly)*4;lx=e.clientX;ly=e.clientY;mflush()}
+              else if(hidOn){ax+=(e.clientX-lx)*2.4;ay+=(e.clientY-ly)*2.4;lx=e.clientX;ly=e.clientY;if(!tm)tm=setTimeout(flush,30)}});
+            pad.addEventListener('pointercancel',()=>{pd=null;$('dot').style.opacity=0});
+            pad.addEventListener('pointerup',async e=>{if(!pd)return;const q=pd;pd=null;$('dot').style.opacity=0;
+              const moved=Math.hypot(q.lx-q.x,q.ly-q.y),dt=Date.now()-q.t;
+              if(rcvOn){if(moved<12&&dt<400)rget('/mclick').catch(()=>{});return}
+              if(hidOn){if(moved<12&&dt<400)btp().click({btn:1}).catch(()=>{});return}
+              const r=pad.getBoundingClientRect();
+              const s=await getScr();
+              const m=(x,y)=>[Math.round(Math.min(Math.max((x-r.left)/r.width,0),1)*s.w),Math.round(Math.min(Math.max((y-r.top)/r.height,0),1)*s.h)];
+              const a=m(q.x,q.y),b=m(q.lx,q.ly);
+              if(moved<12)rawAdb('input tap '+a[0]+' '+a[1]);
+              else rawAdb('input swipe '+a[0]+' '+a[1]+' '+b[0]+' '+b[1]+' '+Math.min(Math.max(dt,120),700))})}
+          async function scrollTV(d){if(hidOn){btp().mouse({wheel:d>0?-3:3}).catch(()=>{});return}
+            if(rcvOn){rget('/mscroll',{d:d}).catch(()=>{});return}const s=await getScr();const x=Math.round(s.w/2),y1=Math.round(s.h*(d>0?0.7:0.3)),y2=Math.round(s.h*(d>0?0.3:0.7));
+            rawAdb('input swipe '+x+' '+y1+' '+x+' '+y2+' 350')}
+          // ---------- Vibración, colores y energía ----------
+          function buzz(){
+            try{const H=getPlugin('Haptics');
+              if(H){Promise.resolve(H.impact({style:'LIGHT'})).catch(()=>{if(navigator.vibrate)navigator.vibrate(12)});return}}catch(e){}
+            if(navigator.vibrate)navigator.vibrate(12)}
+          document.addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('button'))buzz()},{passive:true});
+          const MAP=[[/toggle\('pwr'\)/,'red'],[/powerAct\('SHUTDOWN'\)/,'red'],[/powerAct\('REBOOT'\)/,'orange'],[/powerAct\('POWER'\)/,'teal'],
+           [/VOLUME/,'blue'],[/CHANNEL/,'violet'],[/MUTE/,'orange'],[/'HOME'/,'green'],[/MENU/,'teal'],[/'BACK'/,'orange'],[/PLAY_PAUSE/,'green'],
+           [/INFO/,'teal'],[/NUM_/,'slate'],[/'(UP|DOWN|LEFT|RIGHT)'/,'slate'],[/'OK'/,'amber'],[/'DEL'/,'orange'],[/'ENTER'/,'green'],[/SPACE/,'slate'],
+           [/voice\(/,'violet'],[/scrollTV/,'slate']];
+          function colorize(){document.querySelectorAll('button[onclick]').forEach(b=>{const o=b.getAttribute('onclick');
+            for(const m of MAP){if(m[0].test(o)){b.classList.add('c-'+m[1]);break}}})}
+          let armed=null;
+          function powerAct(k){
+            if(k==='POWER'){key('POWER');return}
+            if(armed!==k){armed=k;toast(k==='REBOOT'?'Toca otra vez para REINICIAR':'Toca otra vez para APAGAR');setTimeout(()=>{armed=null},3000);return}
+            armed=null;send(k);toast(k==='REBOOT'?'Reiniciando…':'Apagando…');$('pwr').classList.remove('show')}
+          // ---------- Buscar y conectar ----------
+          function explain(e){const m=String((e&&e.message)||e||'').toLowerCase();
+            if(m.indexOf('refused')>=0)return 'Puerto cerrado: activa la depuración ADB en el box';
+            if(m.indexOf('time')>=0||m.indexOf('unreachable')>=0||m.indexOf('route')>=0)return 'No responde: revisa la IP y que estén en el mismo Wi‑Fi';
+            return 'Mira la pantalla del TV y acepta la depuración (marca "Siempre")'}
+          async function testConn(silent){
+            if(!window.ADB){send('PING');return}
+            if(!silent){$('status').textContent='Conectando… acepta el aviso en el TV';$('led').classList.remove('on')}
+            try{const o=await adbOut('echo ok');
+              if(o.indexOf('ok')>=0){wifiOK=true;status();if(!silent){toast('¡Conectado!');$('conn').classList.remove('show')}return true}
+              throw new Error('sin respuesta')}
+            catch(e){wifiOK=false;status();if(!silent)toast(explain(e));return false}
+          }
+          async function scanTV(){
+            const P=getPlugin('ADB');
+            const box=$('scanres');
+            if(!P){box.innerHTML='Esta app no incluye el motor de conexión. Probablemente el APK no fue generado con GitHub (build-apk-todo-en-uno.yml).<br>Detalle: Capacitor '+(window.Capacitor?'detectado':'NO detectado')+'.';return}
+            box.textContent='Buscando en tu red Wi‑Fi… (unos segundos)';
+            try{const r=await P.scan({port:5555});const h=r.hosts||[];
+              if(h.length){box.innerHTML='Encontré '+h.length+' dispositivo(s). Toca el de tu TV Box:'+
+                h.map(ip=>'<button class="c-green" onclick="useHost(\''+ip+'\')">📺 '+ip+'</button>').join('')}
+              else{box.innerHTML='No encontré nada con ADB activo (tu teléfono: '+r.myIp+').<br>Revisa: 1) box encendido y en el mismo Wi‑Fi que el teléfono, 2) Ajustes › Opciones de desarrollador › Depuración USB activada (y "ADB por red" si aparece), 3) sin red de invitados ni datos móviles.'}}
+            catch(e){const m=String((e&&e.message)||e||'');
+              if(/implement|not available|unavailable/i.test(m))box.innerHTML='La app no tiene el plugin ADB. Instala el APK generado con GitHub.<br>Detalle: '+m;
+              else if(/wi-?fi/i.test(m))box.textContent='No hay Wi‑Fi. Conecta el teléfono a tu red y reintenta.';
+              else box.textContent='Error al buscar: '+m}
+          }
+          function useHost(ip){cfg.ip=ip;cfg.port='5555';$('ip').value=ip;$('port').value='5555';store.set('cfg',cfg);testConn()}
+          function appLaunch(p,n){send('APP:'+p);toast('Abriendo '+n)}
+          // ---------- Bluetooth como teclado y mouse ----------
+          const BTK=['POWER','VOLUME_UP','VOLUME_DOWN','MUTE','CHANNEL_UP','CHANNEL_DOWN','HOME','MENU','BACK','UP','DOWN','LEFT','RIGHT','OK','PLAY_PAUSE','DEL','ENTER','SPACE'];
+          function btp(){return getPlugin('BTRemote')}
+          async function btSend(cmd){const P=btp();if(!P)return null;
+            try{if(BTK.indexOf(cmd)>=0||cmd.indexOf('NUM_')===0){await P.key({key:cmd});return true}
+              if(cmd.indexOf('TEXT:')===0){await P.text({text:cmd.slice(5)});return true}}
+            catch(e){toast('Bluetooth: '+((e&&e.message)||'error'));return true}
+            return null}
+          function mclick(b){if(rcvOn){if(b===2)key('BACK');else rget('/mclick').catch(()=>{});return}if(hidOn){btp().click({btn:b}).catch(()=>{});return}key(b===2?'BACK':'OK')}
+          function btMsg(h){$('btres').innerHTML=h}
+          async function btStart(){const P=btp();if(!P){btMsg('Esta versión no incluye Bluetooth. Instala el APK nuevo.');return}
+            try{await P.start();store.set('btUsed',true);btMsg('Bluetooth listo. Ahora toca el paso 2.');btPoll()}
+            catch(e){btMsg('No se pudo activar: '+((e&&e.message)||'error'))}}
+          async function btVisible(){try{await btp().discoverable();
+            btMsg('En el box: <b>Ajustes › Bluetooth › Agregar accesorio</b>, elige tu teléfono y acepta. Después toca el paso 3.')}
+            catch(e){btMsg('No se pudo: '+((e&&e.message)||'error'))}}
+          async function btList(){try{const r=await btp().devices();const d=r.devices||[];
+            btMsg(d.length?'Toca tu TV Box:'+d.map(x=>'<button class="c-green" onclick="btConnect(\''+x.address+'\')">'+x.name+'</button>').join(''):'Aún no hay dispositivos emparejados. Haz el paso 2 primero.')}
+            catch(e){btMsg('Primero toca el paso 1. '+((e&&e.message)||''))}}
+          async function btConnect(a){try{await btp().connect({address:a});btMsg('Conectando… si el box pregunta, acepta.');btPoll()}
+            catch(e){btMsg('No se pudo conectar: '+((e&&e.message)||'error'))}}
+          let btTimer=null;
+          function btPoll(){clearInterval(btTimer);let n=0;btTimer=setInterval(async()=>{n++;await btRefresh();if(hidOn||n>40)clearInterval(btTimer)},1500)}
+          function btRefresh(){const P=btp();if(!P)return Promise.resolve();
+            return Promise.resolve(P.status()).then(r=>{const was=hidOn;hidOn=!!(r&&r.connected);hidName=(r&&r.name)||'';if(was!==hidOn){status();if(hidOn)toast('Bluetooth conectado')}}).catch(()=>{})}
+          // ---------- Receptor en el TV Box (Wi‑Fi fácil) ----------
+          async function rgetIp(ip,path,params,ms){
+            const q=new URLSearchParams(params||{});
+            if(cfg.rtoken&&['/ping','/pair','/showcode'].indexOf(path)<0)q.set('t',cfg.rtoken);
+            const c=new AbortController();const tm=setTimeout(()=>c.abort(),ms||3000);
+            try{const r=await fetch('http://'+ip+':8765'+path+'?'+q.toString(),{signal:c.signal});
+              if(!r.ok)throw new Error('http '+r.status);return await r.json()}
+            finally{clearTimeout(tm)}}
+          const rget=(p,q,ms)=>rgetIp(cfg.rip,p,q,ms);
+          let mvBusy=false,mvx=0,mvy=0;
+          async function mflush(){
+            if(mvBusy)return;const dx=Math.round(mvx),dy=Math.round(mvy);if(!dx&&!dy)return;
+            mvx-=dx;mvy-=dy;mvBusy=true;
+            try{await rget('/mmove',{dx:dx,dy:dy},1500)}catch(e){}
+            mvBusy=false;if(Math.abs(mvx)>=1||Math.abs(mvy)>=1)mflush()}
+          const RK=['POWER','VOLUME_UP','VOLUME_DOWN','MUTE','HOME','MENU','BACK','UP','DOWN','LEFT','RIGHT','OK','PLAY_PAUSE','INFO','DEL','ENTER','SPACE'];
+          async function rSend(cmd){
+            try{
+              if(cmd.indexOf('APP:')===0){await rget('/launch',{pkg:cmd.slice(4)});return true}
+              if(cmd.indexOf('TEXT:')===0){await rget('/text',{s:cmd.slice(5)});return true}
+              if(cmd.indexOf('NUM_')===0){await rget('/text',{s:cmd.slice(4)});return true}
+              if(cmd==='REBOOT'||cmd==='SHUTDOWN'){await rget('/key',{name:'POWER'});toast('Se abrió el menú de energía en el TV');return true}
+              if(RK.indexOf(cmd)>=0){await rget('/key',{name:cmd});return true}
+            }catch(e){
+              if(/^http/.test(String((e&&e.message)||e))){toast('El TV Box no pudo hacerlo (¿está instalada esa app?)');return true}
+              rcvOn=false;status();toast('El TV Box no responde, usando otra conexión')}
+            return null}
+          async function rRefresh(){
+            if(!cfg.rip||!cfg.rtoken){return}
+            try{const r=await rgetIp(cfg.rip,'/ping',{},2000);const was=rcvOn;rcvOn=!!r.ok;rcvName=r.name||'';if(was!==rcvOn)status()}
+            catch(e){if(rcvOn){rcvOn=false;status()}}}
+          async function rScan(){
+            const P=getPlugin('ADB'),box=$('rres');
+            if(!P){box.textContent='Instala el APK generado con GitHub.';return}
+            box.textContent='Buscando en tu Wi‑Fi…';
+            try{const r=await P.scan({port:8765});const hs=r.hosts||[];
+              if(!hs.length){box.innerHTML='No encontré el receptor (teléfono: '+r.myIp+').<br>En el TV Box: 1) instala esta misma app, 2) Ajustes › Accesibilidad › Control TV Box › Activar. Los dos deben estar en el mismo Wi‑Fi.';return}
+              box.innerHTML='Toca tu TV Box:'+hs.map(ip=>'<button class="c-green" onclick="rPick(\''+ip+'\')">📺 '+ip+'</button>').join('')}
+            catch(e){box.textContent='Error al buscar: '+((e&&e.message)||e)}}
+          async function rPick(ip){
+            cfg.rip=ip;store.set('cfg',cfg);
+            try{await rgetIp(ip,'/showcode')}catch(e){}
+            $('rres').innerHTML='Mira la pantalla del TV: aparece un <b>código de 4 números</b>.<input id="rcode" inputmode="numeric" maxlength="4" placeholder="Código del TV"><button class="go c-amber" onclick="rPair()">Vincular</button>'}
+          async function rPair(){
+            const c=$('rcode').value.trim();
+            try{const r=await rgetIp(cfg.rip,'/pair',{code:c});cfg.rtoken=r.token;store.set('cfg',cfg);await rRefresh();toast('¡Vinculado!');$('conn').classList.remove('show')}
+            catch(e){$('rres').innerHTML+='<br>Código incorrecto o sin respuesta. Reintenta.'}}
+          function toggleEdit(){editing=!editing;$('remote').classList.toggle('edit',editing);$('editbtn').textContent=editing?'Listo':'Editar'}
+
+          // ---------- Inicio ----------
+          $('ip').value=cfg.ip;$('port').value=cfg.port;$('path').value=cfg.path;$('svc').value=cfg.svc;$('chr').value=cfg.chr;
+          renderApps();status();setupPad();colorize();
+          if(cfg.ip&&window.ADB)setTimeout(()=>testConn(true),700);
+          if(store.get('btUsed',false)){const P=btp();if(P)Promise.resolve(P.start()).catch(()=>{})}
+          btRefresh();setInterval(btRefresh,4000);
+          rRefresh();setInterval(rRefresh,6000);
+          </script>
+          </body>
+          </html>
+          FIN_0
+          mkdir -p "$(dirname AdbPlugin.java)"
+          cat > AdbPlugin.java <<'FIN_1'
+          package com.control.remoto;
+
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.speech.RecognizerIntent;
+          import androidx.activity.result.ActivityResult;
+          import com.getcapacitor.annotation.ActivityCallback;
+
+          import com.getcapacitor.JSArray;
+
+          import java.io.File;
+          import java.net.Inet4Address;
+          import java.net.InetAddress;
+          import java.net.InetSocketAddress;
+          import java.net.NetworkInterface;
+          import java.net.Socket;
+          import java.util.ArrayList;
+          import java.util.Enumeration;
+          import java.util.List;
+          import java.util.concurrent.Callable;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+          import java.util.concurrent.Future;
+
+          import dadb.AdbKeyPair;
+          import dadb.AdbShellResponse;
+          import dadb.Dadb;
+
+          @CapacitorPlugin(name = "ADB")
+          public class AdbPlugin extends Plugin {
+
+              private Dadb dadb;
+              private String current;
+
+              private synchronized Dadb conn(String ip, int port) throws Exception {
+                  String id = ip + ":" + port;
+                  if (dadb != null && id.equals(current)) return dadb;
+                  close();
+                  File dir = getContext().getFilesDir();
+                  File priv = new File(dir, "adbkey");
+                  File pub = new File(dir, "adbkey.pub");
+                  if (!priv.exists() || !pub.exists()) AdbKeyPair.generate(priv, pub);
+                  AdbKeyPair keys = AdbKeyPair.read(priv, pub);
+                  dadb = Dadb.create(ip, port, keys);
+                  current = id;
+                  return dadb;
+              }
+
+              private synchronized void close() {
+                  try { if (dadb != null) dadb.close(); } catch (Exception ignored) {}
+                  dadb = null;
+                  current = null;
+              }
+
+              @PluginMethod
+              public void shell(PluginCall call) {
+                  String ip = call.getString("ip");
+                  Integer port = call.getInt("port", 5555);
+                  String cmd = call.getString("cmd");
+                  if (ip == null || cmd == null) { call.reject("Faltan datos"); return; }
+                  try {
+                      AdbShellResponse r;
+                      try {
+                          r = conn(ip, port).shell(cmd);
+                      } catch (Exception first) {   // reintenta una vez si la conexión se cayó
+                          close();
+                          r = conn(ip, port).shell(cmd);
+                      }
+                      JSObject out = new JSObject();
+                      out.put("output", r.getOutput());
+                      out.put("exitCode", r.getExitCode());
+                      call.resolve(out);
+                  } catch (Exception e) {
+                      close();
+                      call.reject(e.getMessage() == null ? "Error ADB" : e.getMessage());
+                  }
+              }
+
+              @PluginMethod
+              public void listen(PluginCall call) {
+                  Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                  i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                  i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Di lo que quieres buscar");
+                  try {
+                      startActivityForResult(call, i, "listenResult");
+                  } catch (Exception e) {
+                      call.reject("Sin reconocimiento de voz");
+                  }
+              }
+
+              @ActivityCallback
+              private void listenResult(PluginCall call, ActivityResult result) {
+                  if (call == null) return;
+                  if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                      ArrayList<String> r = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                      if (r != null && !r.isEmpty()) {
+                          JSObject o = new JSObject();
+                          o.put("text", r.get(0));
+                          call.resolve(o);
+                          return;
+                      }
+                  }
+                  call.reject("Cancelado");
+              }
+
+              private String localIp() {
+                  String cand = null;
+                  try {
+                      Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+                      while (en != null && en.hasMoreElements()) {
+                          NetworkInterface ni = en.nextElement();
+                          if (!ni.isUp() || ni.isLoopback()) continue;
+                          Enumeration<InetAddress> ad = ni.getInetAddresses();
+                          while (ad.hasMoreElements()) {
+                              InetAddress a = ad.nextElement();
+                              if (a instanceof Inet4Address && a.isSiteLocalAddress()) {
+                                  if (ni.getName().startsWith("wlan")) return a.getHostAddress();
+                                  if (cand == null) cand = a.getHostAddress();
+                              }
+                          }
+                      }
+                  } catch (Exception ignored) {}
+                  return cand;
+              }
+
+              @PluginMethod
+              public void scan(PluginCall call) {
+                  final String my = localIp();
+                  if (my == null) { call.reject("Sin Wi-Fi"); return; }
+                  final int port = call.getInt("port", 5555);
+                  final String base = my.substring(0, my.lastIndexOf('.') + 1);
+                  ExecutorService ex = Executors.newFixedThreadPool(48);
+                  List<Future<String>> fs = new ArrayList<>();
+                  for (int i = 1; i < 255; i++) {
+                      final String h = base + i;
+                      if (h.equals(my)) continue;
+                      fs.add(ex.submit((Callable<String>) () -> {
+                          Socket s = new Socket();
+                          try {
+                              s.connect(new InetSocketAddress(h, port), 600);
+                              return h;
+                          } catch (Exception e) {
+                              return null;
+                          } finally {
+                              try { s.close(); } catch (Exception ignored) {}
+                          }
+                      }));
+                  }
+                  JSArray found = new JSArray();
+                  try {
+                      for (Future<String> f : fs) {
+                          String r = f.get();
+                          if (r != null) found.put(r);
+                      }
+                  } catch (Exception e) {
+                      ex.shutdownNow();
+                      call.reject("Error al buscar");
+                      return;
+                  }
+                  ex.shutdown();
+                  JSObject o = new JSObject();
+                  o.put("hosts", found);
+                  o.put("myIp", my);
+                  call.resolve(o);
+              }
+          }
+          FIN_1
+          mkdir -p "$(dirname MainActivity.java)"
+          cat > MainActivity.java <<'FIN_2'
+          package com.control.remoto;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  registerPlugin(AdbPlugin.class);
+                  registerPlugin(BtPlugin.class);
+                  super.onCreate(savedInstanceState);
+              }
+          }
+          FIN_2
+          mkdir -p "$(dirname package.json)"
+          cat > package.json <<'FIN_3'
+          {
+            "name": "control-tvbox",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/android": "^6.1.0",
+              "@capacitor/core": "^6.1.0",
+              "@capacitor/haptics": "^6.0.0"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^6.1.0"
+            }
+          }
+          FIN_3
+          mkdir -p "$(dirname capacitor.config.json)"
+          cat > capacitor.config.json <<'FIN_4'
+          {
+            "appId": "com.control.remoto",
+            "appName": "Control TV Box",
+            "webDir": "www",
+            "server": { "androidScheme": "http", "cleartext": true }
+          }
+          FIN_4
+          mkdir -p "$(dirname BtPlugin.java)"
+          cat > BtPlugin.java <<'FIN_5'
+          package com.control.remoto;
+
+          import android.Manifest;
+          import android.annotation.SuppressLint;
+          import android.bluetooth.BluetoothAdapter;
+          import android.bluetooth.BluetoothDevice;
+          import android.bluetooth.BluetoothHidDevice;
+          import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
+          import android.bluetooth.BluetoothManager;
+          import android.bluetooth.BluetoothProfile;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.os.Build;
+          import android.os.Handler;
+          import android.os.Looper;
+
+          import androidx.core.content.ContextCompat;
+
+          import com.getcapacitor.JSArray;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.getcapacitor.annotation.Permission;
+          import com.getcapacitor.annotation.PermissionCallback;
+
+          import java.text.Normalizer;
+          import java.util.Set;
+          import java.util.concurrent.Executors;
+
+          @SuppressLint("MissingPermission")
+          @CapacitorPlugin(
+              name = "BTRemote",
+              permissions = { @Permission(alias = "bt", strings = { Manifest.permission.BLUETOOTH_CONNECT }) }
+          )
+          public class BtPlugin extends Plugin {
+
+              // Descriptor HID: teclado (id 1), control multimedia (id 2) y mouse (id 3)
+              private static final int[] D = {
+                  0x05,0x01,0x09,0x06,0xA1,0x01,0x85,0x01,
+                  0x05,0x07,0x19,0xE0,0x29,0xE7,0x15,0x00,0x25,0x01,0x75,0x01,0x95,0x08,0x81,0x02,
+                  0x95,0x01,0x75,0x08,0x81,0x01,
+                  0x95,0x06,0x75,0x08,0x15,0x00,0x25,0x65,0x05,0x07,0x19,0x00,0x29,0x65,0x81,0x00,
+                  0xC0,
+                  0x05,0x0C,0x09,0x01,0xA1,0x01,0x85,0x02,
+                  0x15,0x00,0x26,0xFF,0x03,0x19,0x00,0x2A,0xFF,0x03,0x75,0x10,0x95,0x01,0x81,0x00,
+                  0xC0,
+                  0x05,0x01,0x09,0x02,0xA1,0x01,0x85,0x03,0x09,0x01,0xA1,0x00,
+                  0x05,0x09,0x19,0x01,0x29,0x03,0x15,0x00,0x25,0x01,0x95,0x03,0x75,0x01,0x81,0x02,
+                  0x95,0x01,0x75,0x05,0x81,0x03,
+                  0x05,0x01,0x09,0x30,0x09,0x31,0x09,0x38,0x15,0x81,0x25,0x7F,0x75,0x08,0x95,0x03,0x81,0x06,
+                  0xC0,0xC0
+              };
+
+              private BluetoothAdapter adapter;
+              private BluetoothHidDevice hid;
+              private volatile boolean appRegistered = false;
+              private volatile BluetoothDevice host = null;
+              private volatile BluetoothDevice lastHost = null;
+              private volatile int retries = 0;
+              private final Handler handler = new Handler(Looper.getMainLooper());
+              private boolean keepAliveOn = false;
+
+              private final Runnable keepAlive = new Runnable() {
+                  @Override
+                  public void run() {
+                      if (host != null) send(3, new byte[]{0, 0, 0, 0});
+                      handler.postDelayed(this, 6000);
+                  }
+              };
+
+              private void startKeepAlive() {
+                  if (keepAliveOn) return;
+                  keepAliveOn = true;
+                  handler.postDelayed(keepAlive, 6000);
+              }
+
+              private void scheduleReconnect() {
+                  if (retries >= 30) return;
+                  retries++;
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          BluetoothDevice d = lastHost;
+                          if (host == null && hid != null && appRegistered && d != null) {
+                              try { hid.connect(d); } catch (Exception ignored) {}
+                          }
+                      }
+                  }, 3000);
+              }
+
+              private boolean hasPerm() {
+                  return Build.VERSION.SDK_INT < 31
+                      || ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+              }
+
+              private BluetoothAdapter ad() {
+                  if (adapter == null) {
+                      BluetoothManager m = (BluetoothManager) getContext().getSystemService(Context.BLUETOOTH_SERVICE);
+                      if (m != null) adapter = m.getAdapter();
+                  }
+                  return adapter;
+              }
+
+              @PluginMethod
+              public void start(PluginCall call) {
+                  if (!hasPerm()) {
+                      requestPermissionForAlias("bt", call, "permResult");
+                      return;
+                  }
+                  doStart(call);
+              }
+
+              @PermissionCallback
+              private void permResult(PluginCall call) {
+                  if (hasPerm()) doStart(call);
+                  else call.reject("Permiso de Bluetooth denegado");
+              }
+
+              private void doStart(PluginCall call) {
+                  if (Build.VERSION.SDK_INT < 28) { call.reject("Se necesita Android 9 o superior"); return; }
+                  BluetoothAdapter a = ad();
+                  if (a == null || !a.isEnabled()) { call.reject("Activa el Bluetooth del teléfono"); return; }
+                  if (hid != null) {
+                      if (!appRegistered) register();
+                      call.resolve();
+                      return;
+                  }
+                  boolean ok = a.getProfileProxy(getContext(), new BluetoothProfile.ServiceListener() {
+                      @Override
+                      public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                          if (profile == BluetoothProfile.HID_DEVICE) {
+                              hid = (BluetoothHidDevice) proxy;
+                              register();
+                          }
+                      }
+
+                      @Override
+                      public void onServiceDisconnected(int profile) {
+                          hid = null;
+                          appRegistered = false;
+                          host = null;
+                      }
+                  }, BluetoothProfile.HID_DEVICE);
+                  if (!ok) { call.reject("Este teléfono no soporta modo teclado Bluetooth"); return; }
+                  call.resolve();
+              }
+
+              private void register() {
+                  byte[] desc = new byte[D.length];
+                  for (int i = 0; i < D.length; i++) desc[i] = (byte) D[i];
+                  BluetoothHidDeviceAppSdpSettings sdp = new BluetoothHidDeviceAppSdpSettings(
+                      "Control TV Box", "Control remoto", "Control TV Box",
+                      BluetoothHidDevice.SUBCLASS1_COMBO, desc);
+                  hid.registerApp(sdp, null, null, Executors.newSingleThreadExecutor(), new BluetoothHidDevice.Callback() {
+                      @Override
+                      public void onAppStatusChanged(BluetoothDevice pluggedDevice, boolean registered) {
+                          appRegistered = registered;
+                          if (registered) startKeepAlive();
+                      }
+
+                      @Override
+                      public void onConnectionStateChanged(BluetoothDevice device, int state) {
+                          if (state == BluetoothProfile.STATE_CONNECTED) {
+                              host = device;
+                              lastHost = device;
+                              retries = 0;
+                          } else if (state == BluetoothProfile.STATE_DISCONNECTED && device != null) {
+                              if (device.equals(host)) host = null;
+                              if (device.equals(lastHost)) scheduleReconnect();
+                          }
+                      }
+                  });
+              }
+
+              @PluginMethod
+              public void status(PluginCall call) {
+                  JSObject o = new JSObject();
+                  BluetoothDevice h = host;
+                  String n = "";
+                  if (h != null) {
+                      try { n = h.getName() == null ? h.getAddress() : h.getName(); } catch (Exception ignored) {}
+                  }
+                  o.put("ready", hid != null && appRegistered);
+                  o.put("connected", h != null);
+                  o.put("name", n);
+                  call.resolve(o);
+              }
+
+              @PluginMethod
+              public void discoverable(PluginCall call) {
+                  try {
+                      Intent i = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+                      i.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+                      getActivity().startActivity(i);
+                      call.resolve();
+                  } catch (Exception e) {
+                      call.reject("No se pudo hacer visible el teléfono");
+                  }
+              }
+
+              @PluginMethod
+              public void devices(PluginCall call) {
+                  BluetoothAdapter a = ad();
+                  if (a == null) { call.reject("Sin Bluetooth"); return; }
+                  JSArray arr = new JSArray();
+                  Set<BluetoothDevice> bonded = a.getBondedDevices();
+                  if (bonded != null) {
+                      for (BluetoothDevice d : bonded) {
+                          JSObject o = new JSObject();
+                          o.put("name", d.getName() == null ? d.getAddress() : d.getName());
+                          o.put("address", d.getAddress());
+                          arr.put(o);
+                      }
+                  }
+                  JSObject r = new JSObject();
+                  r.put("devices", arr);
+                  call.resolve(r);
+              }
+
+              @PluginMethod
+              public void connect(PluginCall call) {
+                  String addr = call.getString("address");
+                  BluetoothAdapter a = ad();
+                  if (hid == null || a == null || addr == null) { call.reject("Primero activa el modo Bluetooth"); return; }
+                  try {
+                      BluetoothDevice d = a.getRemoteDevice(addr);
+                      lastHost = d;
+                      retries = 0;
+                      hid.connect(d);
+                      call.resolve();
+                  } catch (Exception e) {
+                      call.reject("No se pudo conectar");
+                  }
+              }
+
+              // ---------- envío de teclas ----------
+              private boolean send(int id, byte[] data) {
+                  BluetoothDevice h = host;
+                  if (hid == null || h == null) return false;
+                  return hid.sendReport(h, id, data);
+              }
+
+              private void nap(int ms) {
+                  try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
+              }
+
+              private static int consumer(String k) {
+                  switch (k) {
+                      case "HOME": return 0x0223;
+                      case "BACK": return 0x0224;
+                      case "VOLUME_UP": return 0x00E9;
+                      case "VOLUME_DOWN": return 0x00EA;
+                      case "MUTE": return 0x00E2;
+                      case "MENU": return 0x0040;
+                      case "PLAY_PAUSE": return 0x00CD;
+                      case "CHANNEL_UP": return 0x009C;
+                      case "CHANNEL_DOWN": return 0x009D;
+                      case "POWER": return 0x0030;
+                      default: return 0;
+                  }
+              }
+
+              private static int keyboard(String k) {
+                  switch (k) {
+                      case "UP": return 0x52;
+                      case "DOWN": return 0x51;
+                      case "LEFT": return 0x50;
+                      case "RIGHT": return 0x4F;
+                      case "OK":
+                      case "ENTER": return 0x28;
+                      case "DEL": return 0x2A;
+                      case "SPACE": return 0x2C;
+                      default: break;
+                  }
+                  if (k.startsWith("NUM_")) {
+                      try {
+                          int n = Integer.parseInt(k.substring(4));
+                          return n == 0 ? 0x27 : 0x1E + n - 1;
+                      } catch (Exception ignored) {}
+                  }
+                  return 0;
+              }
+
+              private void pressKey(int mod, int code) {
+                  send(1, new byte[]{(byte) mod, 0, (byte) code, 0, 0, 0, 0, 0});
+                  nap(20);
+                  send(1, new byte[8]);
+                  nap(15);
+              }
+
+              @PluginMethod
+              public void key(PluginCall call) {
+                  String k = call.getString("key");
+                  if (k == null) { call.reject("Falta la tecla"); return; }
+                  if (host == null || hid == null) { call.reject("Bluetooth no conectado"); return; }
+                  int u = consumer(k);
+                  if (u != 0) {
+                      send(2, new byte[]{(byte) (u & 0xFF), (byte) ((u >> 8) & 0xFF)});
+                      nap(25);
+                      send(2, new byte[]{0, 0});
+                      call.resolve();
+                      return;
+                  }
+                  int c = keyboard(k);
+                  if (c != 0) {
+                      pressKey(0, c);
+                      call.resolve();
+                      return;
+                  }
+                  call.reject("Tecla no soportada por Bluetooth");
+              }
+
+              private int[] map(char c) {
+                  if (c >= 'a' && c <= 'z') return new int[]{0, 0x04 + (c - 'a')};
+                  if (c >= 'A' && c <= 'Z') return new int[]{2, 0x04 + (c - 'A')};
+                  if (c >= '1' && c <= '9') return new int[]{0, 0x1E + (c - '1')};
+                  if (c == '0') return new int[]{0, 0x27};
+                  switch (c) {
+                      case ' ': return new int[]{0, 0x2C};
+                      case '.': return new int[]{0, 0x37};
+                      case ',': return new int[]{0, 0x36};
+                      case '-': return new int[]{0, 0x2D};
+                      case '_': return new int[]{2, 0x2D};
+                      case '/': return new int[]{0, 0x38};
+                      case '@': return new int[]{2, 0x1F};
+                      case ':': return new int[]{2, 0x33};
+                      case '\'': return new int[]{0, 0x34};
+                      case '!': return new int[]{2, 0x1E};
+                      case '?': return new int[]{2, 0x38};
+                      case '+': return new int[]{2, 0x2E};
+                      case '=': return new int[]{0, 0x2E};
+                      default: return null;
+                  }
+              }
+
+              @PluginMethod
+              public void text(PluginCall call) {
+                  String t = call.getString("text");
+                  if (t == null) { call.reject("Falta el texto"); return; }
+                  if (host == null || hid == null) { call.reject("Bluetooth no conectado"); return; }
+                  t = Normalizer.normalize(t, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+                  for (int i = 0; i < t.length(); i++) {
+                      int[] m = map(t.charAt(i));
+                      if (m != null) pressKey(m[0], m[1]);
+                  }
+                  call.resolve();
+              }
+
+              private static int clamp(int v) {
+                  return Math.max(-127, Math.min(127, v));
+              }
+
+              @PluginMethod
+              public void mouse(PluginCall call) {
+                  int dx = call.getInt("dx", 0);
+                  int dy = call.getInt("dy", 0);
+                  int w = call.getInt("wheel", 0);
+                  int b = call.getInt("btn", 0);
+                  send(3, new byte[]{(byte) b, (byte) clamp(dx), (byte) clamp(dy), (byte) clamp(w)});
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void click(PluginCall call) {
+                  int b = call.getInt("btn", 1);
+                  send(3, new byte[]{(byte) b, 0, 0, 0});
+                  nap(40);
+                  send(3, new byte[]{0, 0, 0, 0});
+                  call.resolve();
+              }
+          }
+          FIN_5
+          cat > RemoteAccessibilityService.java <<'FIN_6'
+          package com.control.remoto;
+
+          import android.accessibilityservice.AccessibilityService;
+          import android.accessibilityservice.GestureDescription;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.content.pm.PackageManager;
+          import android.content.pm.ResolveInfo;
+          import android.graphics.Canvas;
+          import android.graphics.Color;
+          import android.graphics.Paint;
+          import android.graphics.Path;
+          import android.graphics.PixelFormat;
+          import android.media.AudioManager;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.provider.Settings;
+          import android.util.DisplayMetrics;
+          import android.view.Gravity;
+          import android.view.KeyEvent;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.view.accessibility.AccessibilityEvent;
+          import android.view.accessibility.AccessibilityNodeInfo;
+          import android.widget.TextView;
+
+          import java.net.Inet4Address;
+          import java.net.InetAddress;
+          import java.net.NetworkInterface;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.Enumeration;
+          import java.util.HashSet;
+          import java.util.List;
+          import java.util.Map;
+          import java.util.Random;
+          import java.util.Set;
+          import java.util.TreeMap;
+          import java.util.UUID;
+
+          public class RemoteAccessibilityService extends AccessibilityService {
+
+              public static volatile RemoteAccessibilityService instance;
+              public static volatile String code = newCode();
+
+              private final Handler ui = new Handler(Looper.getMainLooper());
+              private MiniServer server;
+              private TextView overlay;
+
+              public static String newCode() {
+                  return String.valueOf(1000 + new Random().nextInt(9000));
+              }
+
+              @Override
+              protected void onServiceConnected() {
+                  super.onServiceConnected();
+                  instance = this;
+                  if (server != null) server.stop();
+                  server = new MiniServer(this);
+                  server.start();
+                  showCode();
+              }
+
+              @Override
+              public void onAccessibilityEvent(AccessibilityEvent event) { }
+
+              @Override
+              public void onInterrupt() { }
+
+              @Override
+              public boolean onUnbind(Intent intent) {
+                  instance = null;
+                  if (server != null) { server.stop(); server = null; }
+                  return super.onUnbind(intent);
+              }
+
+              // ---------- vinculación ----------
+              private SharedPreferences prefs() {
+                  return getSharedPreferences("recv", Context.MODE_PRIVATE);
+              }
+
+              public boolean validToken(String t) {
+                  if (t == null) return false;
+                  return prefs().getStringSet("tokens", new HashSet<String>()).contains(t);
+              }
+
+              public String addToken() {
+                  String t = UUID.randomUUID().toString();
+                  Set<String> s = new HashSet<String>(prefs().getStringSet("tokens", new HashSet<String>()));
+                  s.add(t);
+                  prefs().edit().putStringSet("tokens", s).apply();
+                  return t;
+              }
+
+              public static String ip() {
+                  String cand = "?";
+                  try {
+                      Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+                      while (en != null && en.hasMoreElements()) {
+                          NetworkInterface ni = en.nextElement();
+                          if (!ni.isUp() || ni.isLoopback()) continue;
+                          Enumeration<InetAddress> ad = ni.getInetAddresses();
+                          while (ad.hasMoreElements()) {
+                              InetAddress a = ad.nextElement();
+                              if (a instanceof Inet4Address && a.isSiteLocalAddress()) {
+                                  if (ni.getName().startsWith("wlan") || ni.getName().startsWith("eth")) return a.getHostAddress();
+                                  cand = a.getHostAddress();
+                              }
+                          }
+                      }
+                  } catch (Exception ignored) { }
+                  return cand;
+              }
+
+              public void showCode() {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+                              hideCodeNow(wm);
+                              TextView tv = new TextView(RemoteAccessibilityService.this);
+                              tv.setText("Control TV Box listo\nIP: " + ip() + "\nCódigo: " + code);
+                              tv.setTextSize(34);
+                              tv.setTextColor(Color.WHITE);
+                              tv.setGravity(Gravity.CENTER);
+                              tv.setBackgroundColor(0xEE1F2226);
+                              tv.setPadding(70, 40, 70, 40);
+                              WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                                  WindowManager.LayoutParams.WRAP_CONTENT,
+                                  WindowManager.LayoutParams.WRAP_CONTENT,
+                                  WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                                  WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                                  PixelFormat.TRANSLUCENT);
+                              lp.gravity = Gravity.CENTER;
+                              wm.addView(tv, lp);
+                              overlay = tv;
+                              ui.postDelayed(new Runnable() {
+                                  @Override
+                                  public void run() {
+                                      hideCodeNow((WindowManager) getSystemService(Context.WINDOW_SERVICE));
+                                  }
+                              }, 25000);
+                          } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              private void hideCodeNow(WindowManager wm) {
+                  try {
+                      if (overlay != null) wm.removeView(overlay);
+                  } catch (Exception ignored) { }
+                  overlay = null;
+              }
+
+              // ---------- teclas ----------
+              private void dpad(int action) {
+                  if (Build.VERSION.SDK_INT >= 33) performGlobalAction(action);
+              }
+
+              public void key(final String k) {
+                  if (k == null) return;
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try { doKey(k); } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              private void doKey(String k) {
+                  AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                  switch (k) {
+                      case "HOME": performGlobalAction(GLOBAL_ACTION_HOME); break;
+                      case "BACK": performGlobalAction(GLOBAL_ACTION_BACK); break;
+                      case "MENU": performGlobalAction(GLOBAL_ACTION_RECENTS); break;
+                      case "INFO": performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS); break;
+                      case "POWER": performGlobalAction(GLOBAL_ACTION_POWER_DIALOG); break;
+                      case "UP": dpad(GLOBAL_ACTION_DPAD_UP); break;
+                      case "DOWN": dpad(GLOBAL_ACTION_DPAD_DOWN); break;
+                      case "LEFT": dpad(GLOBAL_ACTION_DPAD_LEFT); break;
+                      case "RIGHT": dpad(GLOBAL_ACTION_DPAD_RIGHT); break;
+                      case "OK": dpad(GLOBAL_ACTION_DPAD_CENTER); break;
+                      case "VOLUME_UP":
+                          am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                          break;
+                      case "VOLUME_DOWN":
+                          am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                          break;
+                      case "MUTE":
+                          am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_SHOW_UI);
+                          break;
+                      case "PLAY_PAUSE":
+                          am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
+                          am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE));
+                          break;
+                      case "DEL": editText("", true); break;
+                      case "ENTER": enterKey(); break;
+                      case "SPACE": editText(" ", false); break;
+                      default:
+                          if (k.startsWith("NUM_")) editText(k.substring(4), false);
+                          break;
+                  }
+              }
+
+              // ---------- escribir texto ----------
+              public void typeText(final String s) {
+                  if (s == null) return;
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try { editText(s, false); } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              private void editText(String add, boolean back) {
+                  AccessibilityNodeInfo root = getRootInActiveWindow();
+                  if (root == null) return;
+                  AccessibilityNodeInfo n = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+                  if (n == null) return;
+                  CharSequence cur = n.getText();
+                  String s = (cur == null || (Build.VERSION.SDK_INT >= 26 && n.isShowingHintText())) ? "" : cur.toString();
+                  if (back) {
+                      if (s.length() > 0) s = s.substring(0, s.length() - 1);
+                  } else {
+                      s = s + add;
+                  }
+                  Bundle b = new Bundle();
+                  b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, s);
+                  n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+              }
+
+              private void enterKey() {
+                  boolean done = false;
+                  AccessibilityNodeInfo root = getRootInActiveWindow();
+                  if (root != null && Build.VERSION.SDK_INT >= 30) {
+                      AccessibilityNodeInfo n = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+                      if (n != null) done = n.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.getId());
+                  }
+                  if (!done) dpad(GLOBAL_ACTION_DPAD_CENTER);
+              }
+
+              // ---------- toques en pantalla (mouse táctil) ----------
+              public void tap(final float fx, final float fy) {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() { gesture(fx, fy, fx, fy, 60); }
+                  });
+              }
+
+              public void swipe(final float x1, final float y1, final float x2, final float y2, final int ms) {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() { gesture(x1, y1, x2, y2, ms); }
+                  });
+              }
+
+              private void gesture(float x1, float y1, float x2, float y2, int ms) {
+                  DisplayMetrics dm = getResources().getDisplayMetrics();
+                  gesturePx(x1 * dm.widthPixels, y1 * dm.heightPixels, x2 * dm.widthPixels, y2 * dm.heightPixels, ms);
+              }
+
+              private void gesturePx(float x1, float y1, float x2, float y2, int ms) {
+                  try {
+                      Path p = new Path();
+                      p.moveTo(x1, y1);
+                      if (x1 != x2 || y1 != y2) p.lineTo(x2, y2);
+                      int d = Math.max(50, Math.min(ms, 800));
+                      GestureDescription.Builder b = new GestureDescription.Builder();
+                      b.addStroke(new GestureDescription.StrokeDescription(p, 0, d));
+                      dispatchGesture(b.build(), null, null);
+                  } catch (Exception ignored) { }
+              }
+
+              // ---------- cursor de mouse en la TV ----------
+              private static class CursorView extends View {
+                  private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final Path path = new Path();
+
+                  CursorView(Context c) {
+                      super(c);
+                      fill.setColor(Color.WHITE);
+                      fill.setStyle(Paint.Style.FILL);
+                      line.setColor(Color.BLACK);
+                      line.setStyle(Paint.Style.STROKE);
+                      line.setStrokeWidth(4f);
+                      path.moveTo(3, 3);
+                      path.lineTo(3, 52);
+                      path.lineTo(16, 40);
+                      path.lineTo(27, 64);
+                      path.lineTo(37, 59);
+                      path.lineTo(26, 36);
+                      path.lineTo(44, 36);
+                      path.close();
+                  }
+
+                  @Override
+                  protected void onDraw(Canvas canvas) {
+                      canvas.drawPath(path, fill);
+                      canvas.drawPath(path, line);
+                  }
+              }
+
+              private CursorView cursor;
+              private WindowManager.LayoutParams cursorLp;
+              private float cx = -1f;
+              private float cy = -1f;
+
+              private final Runnable hideCursor = new Runnable() {
+                  @Override
+                  public void run() {
+                      try {
+                          if (cursor != null) {
+                              ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).removeView(cursor);
+                          }
+                      } catch (Exception ignored) { }
+                      cursor = null;
+                  }
+              };
+
+              private void ensureCursor() {
+                  DisplayMetrics dm = getResources().getDisplayMetrics();
+                  if (cx < 0) { cx = dm.widthPixels / 2f; cy = dm.heightPixels / 2f; }
+                  if (cursor == null) {
+                      cursor = new CursorView(this);
+                      cursorLp = new WindowManager.LayoutParams(
+                          50, 70,
+                          WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                              | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                              | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                              | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                          PixelFormat.TRANSLUCENT);
+                      cursorLp.gravity = Gravity.TOP | Gravity.START;
+                      cursorLp.x = (int) cx;
+                      cursorLp.y = (int) cy;
+                      ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).addView(cursor, cursorLp);
+                  }
+                  ui.removeCallbacks(hideCursor);
+                  ui.postDelayed(hideCursor, 12000);
+              }
+
+              public void mmove(final float dx, final float dy) {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              ensureCursor();
+                              DisplayMetrics dm = getResources().getDisplayMetrics();
+                              cx = Math.max(0, Math.min(dm.widthPixels - 1, cx + dx));
+                              cy = Math.max(0, Math.min(dm.heightPixels - 1, cy + dy));
+                              cursorLp.x = (int) cx;
+                              cursorLp.y = (int) cy;
+                              ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).updateViewLayout(cursor, cursorLp);
+                          } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              public void mclick() {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              ensureCursor();
+                              gesturePx(cx + 2, cy + 2, cx + 2, cy + 2, 60);
+                          } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              public void mscroll(final int dir) {
+                  ui.post(new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              ensureCursor();
+                              DisplayMetrics dm = getResources().getDisplayMetrics();
+                              float span = dm.heightPixels * 0.22f;
+                              float y1 = Math.max(10, Math.min(dm.heightPixels - 10, cy + (dir > 0 ? span : -span)));
+                              float y2 = Math.max(10, Math.min(dm.heightPixels - 10, cy + (dir > 0 ? -span : span)));
+                              gesturePx(cx, y1, cx, y2, 320);
+                          } catch (Exception ignored) { }
+                      }
+                  });
+              }
+
+              // ---------- apps ----------
+              public String appsJson() {
+                  PackageManager pm = getPackageManager();
+                  Map<String, String> m = new TreeMap<String, String>();
+                  String[] cats = new String[]{Intent.CATEGORY_LAUNCHER, Intent.CATEGORY_LEANBACK_LAUNCHER};
+                  for (String cat : cats) {
+                      Intent i = new Intent(Intent.ACTION_MAIN);
+                      i.addCategory(cat);
+                      for (ResolveInfo ri : pm.queryIntentActivities(i, 0)) {
+                          String pkg = ri.activityInfo.packageName;
+                          if (pkg.equals(getPackageName())) continue;
+                          if (!m.containsKey(pkg)) m.put(pkg, String.valueOf(ri.loadLabel(pm)));
+                      }
+                  }
+                  List<Map.Entry<String, String>> l = new ArrayList<Map.Entry<String, String>>(m.entrySet());
+                  Collections.sort(l, new java.util.Comparator<Map.Entry<String, String>>() {
+                      @Override
+                      public int compare(Map.Entry<String, String> x, Map.Entry<String, String> y) {
+                          return x.getValue().compareToIgnoreCase(y.getValue());
+                      }
+                  });
+                  StringBuilder sb = new StringBuilder("{\"apps\":[");
+                  for (int i = 0; i < l.size(); i++) {
+                      if (i > 0) sb.append(",");
+                      sb.append("{\"n\":").append(MiniServer.js(l.get(i).getValue()))
+                        .append(",\"p\":").append(MiniServer.js(l.get(i).getKey())).append("}");
+                  }
+                  return sb.append("]}").toString();
+              }
+
+              public boolean launch(String pkg) {
+                  if (pkg == null) return false;
+                  try {
+                      Intent i = null;
+                      PackageManager pm = getPackageManager();
+                      if (pkg.equals("com.android.settings") || pkg.equals("com.android.tv.settings")) {
+                          i = new Intent(Settings.ACTION_SETTINGS);
+                      } else {
+                          i = pm.getLaunchIntentForPackage(pkg);
+                          if (i == null) i = pm.getLeanbackLaunchIntentForPackage(pkg);
+                      }
+                      if (i == null) return false;
+                      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                      startActivity(i);
+                      return true;
+                  } catch (Exception e) {
+                      return false;
+                  }
+              }
+          }
+          FIN_6
+          cat > MiniServer.java <<'FIN_7'
+          package com.control.remoto;
+
+          import android.os.Build;
+
+          import java.io.BufferedReader;
+          import java.io.InputStreamReader;
+          import java.io.OutputStream;
+          import java.net.InetSocketAddress;
+          import java.net.ServerSocket;
+          import java.net.Socket;
+          import java.net.URLDecoder;
+          import java.nio.charset.StandardCharsets;
+          import java.util.HashMap;
+          import java.util.Map;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+
+          public class MiniServer {
+
+              private final RemoteAccessibilityService svc;
+              private ServerSocket server;
+              private volatile boolean running = false;
+              private final ExecutorService pool = Executors.newCachedThreadPool();
+
+              public MiniServer(RemoteAccessibilityService s) {
+                  svc = s;
+              }
+
+              public void start() {
+                  running = true;
+                  new Thread(new Runnable() {
+                      @Override
+                      public void run() {
+                          try {
+                              server = new ServerSocket();
+                              server.setReuseAddress(true);
+                              server.bind(new InetSocketAddress(8765));
+                              while (running) {
+                                  final Socket c = server.accept();
+                                  pool.execute(new Runnable() {
+                                      @Override
+                                      public void run() { handle(c); }
+                                  });
+                              }
+                          } catch (Exception ignored) { }
+                      }
+                  }).start();
+              }
+
+              public void stop() {
+                  running = false;
+                  try { if (server != null) server.close(); } catch (Exception ignored) { }
+                  pool.shutdownNow();
+              }
+
+              public static String js(String s) {
+                  if (s == null) return "\"\"";
+                  StringBuilder sb = new StringBuilder("\"");
+                  for (int i = 0; i < s.length(); i++) {
+                      char c = s.charAt(i);
+                      if (c == '"' || c == '\\') sb.append('\\').append(c);
+                      else if (c < 32) sb.append(' ');
+                      else sb.append(c);
+                  }
+                  return sb.append("\"").toString();
+              }
+
+              private Map<String, String> parse(String qs) {
+                  Map<String, String> m = new HashMap<String, String>();
+                  if (qs == null || qs.isEmpty()) return m;
+                  for (String part : qs.split("&")) {
+                      int e = part.indexOf('=');
+                      try {
+                          if (e < 0) m.put(URLDecoder.decode(part, "UTF-8"), "");
+                          else m.put(URLDecoder.decode(part.substring(0, e), "UTF-8"), URLDecoder.decode(part.substring(e + 1), "UTF-8"));
+                      } catch (Exception ignored) { }
+                  }
+                  return m;
+              }
+
+              private float f(Map<String, String> a, String k) {
+                  try { return Float.parseFloat(a.get(k)); } catch (Exception e) { return 0f; }
+              }
+
+              private String[] ok() {
+                  return new String[]{"200", "{\"ok\":true}"};
+              }
+
+              private String[] route(String path, Map<String, String> a) {
+                  if (path.equals("/ping")) {
+                      return new String[]{"200", "{\"ok\":true,\"name\":" + js(Build.MODEL) + "}"};
+                  }
+                  if (path.equals("/showcode")) {
+                      svc.showCode();
+                      return ok();
+                  }
+                  if (path.equals("/pair")) {
+                      String sent = a.get("code");
+                      if (sent != null && sent.equals(RemoteAccessibilityService.code)) {
+                          String t = svc.addToken();
+                          RemoteAccessibilityService.code = RemoteAccessibilityService.newCode();
+                          return new String[]{"200", "{\"token\":" + js(t) + "}"};
+                      }
+                      return new String[]{"403", "{\"error\":\"codigo\"}"};
+                  }
+                  if (!svc.validToken(a.get("t"))) {
+                      return new String[]{"401", "{\"error\":\"token\"}"};
+                  }
+                  if (path.equals("/key")) { svc.key(a.get("name")); return ok(); }
+                  if (path.equals("/text")) { svc.typeText(a.get("s")); return ok(); }
+                  if (path.equals("/tap")) { svc.tap(f(a, "x"), f(a, "y")); return ok(); }
+                  if (path.equals("/swipe")) {
+                      svc.swipe(f(a, "x1"), f(a, "y1"), f(a, "x2"), f(a, "y2"), (int) f(a, "ms"));
+                      return ok();
+                  }
+                  if (path.equals("/mmove")) { svc.mmove(f(a, "dx"), f(a, "dy")); return ok(); }
+                  if (path.equals("/mclick")) { svc.mclick(); return ok(); }
+                  if (path.equals("/mscroll")) { svc.mscroll((int) f(a, "d")); return ok(); }
+                  if (path.equals("/apps")) return new String[]{"200", svc.appsJson()};
+                  if (path.equals("/launch")) {
+                      return svc.launch(a.get("pkg")) ? ok() : new String[]{"404", "{\"error\":\"app\"}"};
+                  }
+                  return new String[]{"404", "{\"error\":\"ruta\"}"};
+              }
+
+              private void handle(Socket c) {
+                  try {
+                      c.setSoTimeout(4000);
+                      BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8));
+                      String line = r.readLine();
+                      if (line == null) return;
+                      String h;
+                      while ((h = r.readLine()) != null && !h.isEmpty()) { }
+                      String[] p = line.split(" ");
+                      String method = p[0];
+                      String target = p.length > 1 ? p[1] : "/";
+                      String path = target;
+                      String qs = "";
+                      int q = target.indexOf('?');
+                      if (q >= 0) { path = target.substring(0, q); qs = target.substring(q + 1); }
+                      int status;
+                      String body;
+                      if (method.equals("OPTIONS")) {
+                          status = 204;
+                          body = "";
+                      } else {
+                          String[] res = route(path, parse(qs));
+                          status = Integer.parseInt(res[0]);
+                          body = res[1];
+                      }
+                      byte[] b = body.getBytes(StandardCharsets.UTF_8);
+                      String reason = status == 200 ? "OK" : (status == 204 ? "No Content" : "Error");
+                      String head = "HTTP/1.1 " + status + " " + reason + "\r\n"
+                          + "Content-Type: application/json; charset=utf-8\r\n"
+                          + "Access-Control-Allow-Origin: *\r\n"
+                          + "Access-Control-Allow-Headers: *\r\n"
+                          + "Access-Control-Allow-Private-Network: true\r\n"
+                          + "Connection: close\r\n"
+                          + "Content-Length: " + b.length + "\r\n\r\n";
+                      OutputStream o = c.getOutputStream();
+                      o.write(head.getBytes(StandardCharsets.UTF_8));
+                      o.write(b);
+                      o.flush();
+                  } catch (Exception ignored) {
+                  } finally {
+                      try { c.close(); } catch (Exception ignored2) { }
+                  }
+              }
+          }
+          FIN_7
+          cat > accessibility_config.xml <<'FIN_8'
+          <?xml version="1.0" encoding="utf-8"?>
+          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+              android:accessibilityEventTypes="typeWindowStateChanged"
+              android:accessibilityFeedbackType="feedbackGeneric"
+              android:accessibilityFlags="flagDefault"
+              android:canPerformGestures="true"
+              android:canRetrieveWindowContent="true"
+              android:description="@string/receptor_desc"
+              android:notificationTimeout="100" />
+          FIN_8
+          cat > receptor_strings.xml <<'FIN_9'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="receptor_desc">Permite que tu teléfono controle este TV Box: navegar, abrir apps y escribir.</string>
+          </resources>
+          FIN_9
+
+      - name: Instalar Capacitor
+        run: |
+          npm install
+          npx cap add android
+
+      - name: Agregar plugin ADB
+        run: |
+          DIR=android/app/src/main/java/com/control/remoto
+          mkdir -p "$DIR"
+          cp AdbPlugin.java BtPlugin.java RemoteAccessibilityService.java MiniServer.java MainActivity.java "$DIR/"
+          mkdir -p android/app/src/main/res/xml android/app/src/main/res/values
+          cp accessibility_config.xml android/app/src/main/res/xml/
+          cp receptor_strings.xml android/app/src/main/res/values/
+          GRADLE=android/app/build.gradle
+          awk '!d && /^dependencies \{/ {print; print "    implementation \"dev.mobile:dadb:1.2.10\""; d=1; next} {print}' "$GRADLE" > "$GRADLE.tmp"
+          mv "$GRADLE.tmp" "$GRADLE"
+          npx cap sync android
+
+      - name: Permisos y servicio del receptor
+        run: |
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          perms = ('<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n'
+                   '    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n'
+                   '    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n'
+                   '    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />\n'
+                   '    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />\n'
+                   '    ')
+          svc = ('<service android:name="com.control.remoto.RemoteAccessibilityService" android:exported="true" '
+                 'android:label="Control TV Box (receptor)" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">\n'
+                 '            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>\n'
+                 '            <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_config" />\n'
+                 '        </service>\n    ')
+          assert '<application' in s and '</application>' in s
+          s = s.replace('<application', perms + '<application', 1)
+          s = s.replace('</application>', svc + '</application>', 1)
+          if 'usesCleartextTraffic' not in s:
+              s = s.replace('<application', '<application android:usesCleartextTraffic="true"', 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+
+      - name: Poner icono
+        run: |
+          pip install pillow
+          python3 - <<'PY'
+          import os, shutil
+          from PIL import Image, ImageDraw
+          S=2048;k=S/1024
+          im=Image.new('RGBA',(S,S),(0,0,0,0));d=ImageDraw.Draw(im)
+          def R(x0,y0,x1,y1,r,c):d.rounded_rectangle([x0*k,y0*k,x1*k,y1*k],radius=r*k,fill=c)
+          def C(cx,cy,r,c):d.ellipse([(cx-r)*k,(cy-r)*k,(cx+r)*k,(cy+r)*k],fill=c)
+          R(0,0,1024,1024,230,'#ffb020')
+          R(290,120,734,904,110,'#1f2226')
+          C(512,225,44,'#e5484d')
+          C(512,425,118,'#353a41');C(512,425,52,'#ffb020')
+          for x,y in ((512,330),(512,520),(417,425),(607,425)):C(x,y,10,'#8b9098')
+          R(340,600,484,760,50,'#353a41');R(540,600,684,760,50,'#353a41')
+          w=int(14*k)
+          for cx in (412,612):
+              d.line([(cx-26)*k,640*k,(cx+26)*k,640*k],fill='#e9e6df',width=w)
+              d.line([cx*k,(640-26)*k,cx*k,(640+26)*k],fill='#e9e6df',width=w)
+              d.line([(cx-26)*k,720*k,(cx+26)*k,720*k],fill='#e9e6df',width=w)
+          for x in (400,512,624):C(x,832,24,'#2b2f35')
+          src=im.resize((1024,1024),Image.LANCZOS)
+          base='android/app/src/main/res'
+          shutil.rmtree(base+'/mipmap-anydpi-v26',ignore_errors=True)
+          for dn,sz in {'mdpi':48,'hdpi':72,'xhdpi':96,'xxhdpi':144,'xxxhdpi':192}.items():
+              p=base+'/mipmap-'+dn
+              os.makedirs(p,exist_ok=True)
+              t=src.resize((sz,sz),Image.LANCZOS)
+              for n in ('ic_launcher.png','ic_launcher_round.png','ic_launcher_foreground.png'):
+                  t.save(p+'/'+n)
+          PY
+
+      - name: Compilar APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-tvbox-apk-v4
+          path: android/app/build/outputs/apk/debug/app-debug.apk
